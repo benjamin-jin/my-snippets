@@ -1,0 +1,43 @@
+#%Module1.0#####################################################################
+#
+# Module for {{ tool }} {{ version }}
+#
+################################################################################
+# Main Setting
+set             MAINROOT                    {{ base }}
+set             ORGANIZATION                {{ organization }}
+set             NAME                        {{ name }}
+
+#set name
+if {$ORGANIZATION != ""} {
+  set NAME                  $ORGANIZATION/$NAME
+}
+proc ModuleInfo {} {
+	upvar description description
+	puts stderr $description
+}
+set             VERSION                 {{ version }}
+# module description and what-is
+set description "Loading module for $NAME $VERSION."
+
+# proc ModuleInfo { } {
+#     upvar description description
+#     if { ![is-loaded silent] } {
+#         puts stderr $description
+#     }
+# }
+
+module-whatis   $description
+
+#conflict declaration
+if {$NAME != ""} {
+  conflict $NAME
+}
+
+prepend-path		PATH		$MAINROOT/$NAME/$VERSION/bin
+
+
+# echo module info
+if { [ module-info mode load] } {
+    ModuleInfo
+}
