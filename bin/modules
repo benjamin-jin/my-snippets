@@ -8,7 +8,9 @@ MODULEFILES_DIRECTORY=f"{MODULE_DEFAULT}/modulefiles"
 TEMPLATE_FILE = "template"
 DEFAULT_MAIN_ROOT = "/tools"
 # LOAD TEMPLATE
-templateLoader = jinja2.FileSystemLoader(searchpath=MODULE_DEFAULT)
+SNIPPETS_HOME = os.path.dirname(os.path.dirname(__file__))
+RESOURCE = os.path.join(SNIPPETS_HOME, "resources")
+templateLoader = jinja2.FileSystemLoader(searchpath=RESOURCE)
 templateEnv = jinja2.Environment(loader=templateLoader)
 template = templateEnv.get_template(TEMPLATE_FILE)
 def parsed():
