@@ -1,0 +1,5 @@
+{
+    "TEMPLATE": "/tools/snippets/resources/template",
+    "MODULEPATH": "/tools/Modules/default/modulefiles",
+    "MAIN_ROOT": "/tools"
+}

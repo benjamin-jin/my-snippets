@@ -1,0 +1,137 @@
+#!/bin/env python3
+import os
+import sys
+import jinja2
+import argparse
+import json
+class Settings:
+  TEMPLATE                  = None
+  MODULEPATH                = None
+  MAIN_ROOT                 = None
+
+  base = os.path.dirname(os.path.dirname(__file__))
+  json_file = os.path.join(os.path.join(base, "resources"), "setting.json")
+  json_content = dict()
+
+  def __init__(self, **args):
+    for each in args:
+      if not args[each] == None and hasattr(self, each):
+        setattr(self, each, args[each])
+
+  @classmethod
+  def load_template(cls):
+    templateLoader = jinja2.FileSystemLoader(searchpath=os.path.dirname(cls.TEMPLATE))
+    templateEnv = jinja2.Environment(loader=templateLoader)
+    template = templateEnv.get_template(os.path.basename(cls.TEMPLATE))
+    return template
+
+  @classmethod
+  def load_from_json(cls):
+    with open(cls.json_file) as f:
+      cls.json_content = json.load(f)
+    for each in cls.json_content:
+      if getattr(cls, each) == None:
+        setattr(cls, each, cls.json_content[each].replace("$(base)", cls.base))
+
+  @classmethod
+  def set_attr(cls, **args):
+    for each in args:
+      if not args[each] == None and hasattr(cls, each):
+        setattr(cls, each, args[each])
+        cls.json_content[each] = args[each]
+      with open(cls.json_file, "w") as f:
+        json.dump(cls.json_content, f, indent=4)
+
+  @classmethod
+  def get_attr(cls, args):
+    if hasattr(cls, args):
+      return getattr(cls, args)
+
+def parsing():
+  Settings.load_from_json()
+  parser = argparse.ArgumentParser(description='Parsing Arguments')
+  subparsers = parser.add_subparsers(
+                title='Command',
+                dest='command',
+                metavar='<command>',
+                help='<description>')
+
+  tty_paser = subparsers.add_parser("tty", help="None tty-mode")
+  tty_paser.add_argument("--org", help="Organization Name", dest="organization", default="")
+  tty_paser.add_argument("--tool", help="Tool Name", required=True)
+  tty_paser.add_argument("--version", help="Tool Version", default="")
+  tty_paser.add_argument("--base", default=Settings.get_attr("MAIN_ROOT"), help="Base Directory")
+  tty_paser.add_argument("--force", "-f", action="store_true")
+
+
+  config_parser = subparsers.add_parser("config", help="Configure setting")
+  config_sub_parser = config_parser.add_subparsers(title="Configure Subcommand", dest="subcommand", metavar='<command>', help='<description>')
+
+  MODULEPATH              = "--modulepath"
+  TEMPLATE                = "--template"
+
+  set_paserser = config_sub_parser.add_parser("set", help="Set Configuration")
+
+  set_paserser.add_argument(MODULEPATH, default=Settings.get_attr("MODULEPATH"), help="Set MODULEPATH")
+  set_paserser.add_argument(TEMPLATE, default=os.path.join(Settings.get_attr("TEMPLATE"), Settings.get_attr("TEMPLATE")), help="Set template file location")
+
+  get_parser = config_sub_parser.add_parser("get", help="Get Configuration")
+  get_parser.add_argument(MODULEPATH, action="store_true", help="Get MODULEPATH")
+  get_parser.add_argument(TEMPLATE, action="store_true", help="Get TEMPLATE")
+
+  return parser.parse_args()
+
+def get(**args):
+  for each in args:
+    if args[each]:
+      a = Settings.get_attr(each.upper())
+      if a != None:
+        print(f"{each} : {a}")
+def set(**args):
+  temp = dict()
+  for each in args:
+    temp[each.upper()] = args[each]
+  Settings.set_attr(**temp)
+
+def main():
+  args = vars(parsing())
+  if args["command"] == "config":
+    f = getattr(sys.modules[__name__], args["subcommand"])
+    f(**args)
+  else:
+    use_tty = args["command"] == None
+
+    #ASK REEQUIRED
+    org       = input ('Organization [""] : ')    if use_tty else args["organization"]
+    name      = input ('Tool [""] : ')            if use_tty else args["tool"]
+    version   = input ('Version [""] : ')         if use_tty else args["version"]
+
+    final = os.path.join(org, os.path.join(name, version))
+    if final.endswith("/"):
+      final = final[:-1]
+    filename = os.path.join(Settings.get_attr("MODULEPATH"), final)
+    if final == "":
+      sys.exit("Path should not be empty")
+    dirname = os.path.dirname(final)
+    full_path = os.path.join(Settings.get_attr("MODULEPATH"), dirname)
+    if dirname != "" and not os.path.isdir(full_path):
+      os.makedirs(full_path)
+
+    MAIN_ROOT = input (f'Main ROOT ["{Settings.get_attr("MAIN_ROOT")}"] : ') if use_tty else args["base"]
+    if MAIN_ROOT == "":
+      MAIN_ROOT = Settings.get_attr("MAIN_ROOT")
+
+    if not os.path.isfile(filename) or (not use_tty and args["force"]):
+      if org == "":
+        org = '""'
+      if version == "":
+        version = '""'
+      template = Settings.load_template()
+      out = template.render(tool=os.path.join(org, name), version=version, organization=org, name=name, base=MAIN_ROOT)
+      with open(filename, "w") as f:
+        f.write(out)
+    else:
+      print(f'Already exists : {os.path.join(os.path.join(org, name),version)}')
+
+if __name__ == "__main__":
+  main()
