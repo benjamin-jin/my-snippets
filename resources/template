@@ -34,7 +34,12 @@ if {$NAME != ""} {
   conflict $NAME
 }
 
-prepend-path		PATH		$MAINROOT/$NAME/$VERSION/bin
+if {$VERSION != ""} {
+  prepend-path		PATH		$MAINROOT/$NAME/$VERSION/bin
+}
+if {$VERSION == ""} {
+  prepend-path PATH $MAINROOT/$NAME/bin
+}
 
 
 # echo module info
