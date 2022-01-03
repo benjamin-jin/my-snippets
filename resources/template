@@ -33,14 +33,14 @@ module-whatis   $description
 if {$NAME != ""} {
   conflict $NAME
 }
-
 if {$VERSION != ""} {
-  prepend-path		PATH		$MAINROOT/$NAME/$VERSION/bin
+  set           MAIN_PATH       $MAINROOT/$NAME/$VERSION
 }
-if {$VERSION == ""} {
-  prepend-path PATH $MAINROOT/$NAME/bin
+if {$VERSION ==""} {
+  set           MAIN_PATH       $MAINROOT/$NAME
 }
 
+prepend-path		PATH		$MAIN_PATH/bin
 
 # echo module info
 if { [ module-info mode load] } {
