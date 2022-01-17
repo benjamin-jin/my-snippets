@@ -4,6 +4,8 @@ import sys
 import jinja2
 import argparse
 import json
+'''
+'''
 class Settings:
   TEMPLATE                  = None
   MODULEPATH                = None
